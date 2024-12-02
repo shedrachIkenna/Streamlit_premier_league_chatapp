@@ -75,3 +75,11 @@ class PremierLeagueRAGAnalyzer:
         - Expected Goals: {match['xg']} vs {match['xga']}
         Result: {match['result']}
         """
+    def _retrieve_relevant_matches(self, query: str, k: int = 3) -> List[Dict]:
+        """Semantic search for relevant matches"""
+        query_embedding = self.embedding_model.encode([query])[0]
+        distances, indices = self.index.search(
+            np.array([query_embedding]).astype('float32'), k
+        )
+        
+        return [self.stored_matches[idx] for idx in indices[0] if idx != -1]
