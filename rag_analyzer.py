@@ -139,3 +139,53 @@ class PremierLeagueRAGAnalyzer:
         }
         
         return form_metrics
+
+    def get_head_to_head(self, team1: str, team2: str, last_n_matches: int = 5) -> Dict:
+        """Get head-to-head statistics between two teams"""
+        query = """
+            SELECT *
+            FROM "PremierLeague"
+            WHERE (team = %s AND opponent = %s) OR (team = %s AND opponent = %s)
+            ORDER BY date DESC
+            LIMIT %s
+        """
+        
+        with self._get_connection() as conn:
+            df = pd.read_sql_query(query, conn, params=[team1, team2, team2, team1, last_n_matches])
+            
+        if df.empty:
+            return {"error": "No head-to-head data found"}
+            
+        h2h_stats = {
+            "matches": [],
+            "summary": {
+                f"{team1}_wins": 0,
+                f"{team2}_wins": 0,
+                "draws": 0
+            }
+        }
+        
+        for _, match in df.iterrows():
+            match_info = {
+                "date": match['date'].strftime('%Y-%m-%d'),
+                "home_team": match['team'] if match['venue'] == 'Home' else match['opponent'],
+                "away_team": match['opponent'] if match['venue'] == 'Home' else match['team'],
+                "score": f"{match['gf']}-{match['ga']}" if match['venue'] == 'Home' else f"{match['ga']}-{match['gf']}"
+            }
+            h2h_stats["matches"].append(match_info)
+            
+            # Update win/loss/draw counts
+            if match['result'] == 'W':
+                if match['team'] == team1:
+                    h2h_stats["summary"][f"{team1}_wins"] += 1
+                else:
+                    h2h_stats["summary"][f"{team2}_wins"] += 1
+            elif match['result'] == 'L':
+                if match['team'] == team1:
+                    h2h_stats["summary"][f"{team2}_wins"] += 1
+                else:
+                    h2h_stats["summary"][f"{team1}_wins"] += 1
+            else:
+                h2h_stats["summary"]["draws"] += 1
+                
+        return h2h_stats
