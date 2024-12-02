@@ -83,3 +83,29 @@ class PremierLeagueRAGAnalyzer:
         )
         
         return [self.stored_matches[idx] for idx in indices[0] if idx != -1]
+
+    def _generate_llm_response(self, prompt: str) -> str:
+        """Generate response using Ollama Llama 3"""
+        try:
+            response = ollama.chat(
+                model=self.llm_model,
+                messages=[
+                    {
+                        'role': 'system', 
+                        'content': 'You are a helpful Premier League football analyst.'
+                    },
+                    {
+                        'role': 'user', 
+                        'content': prompt
+                    }
+                ],
+                options={
+                    'temperature': 0.7,
+                    'top_p': 0.9,
+                    'max_tokens': 500
+                }
+            )
+            return response['message']['content']
+        except Exception as e:
+            print(f"Error generating LLM response: {e}")
+            return "Sorry, I couldn't generate a response at the moment."
