@@ -62,3 +62,16 @@ class PremierLeagueRAGAnalyzer:
                 })
         except Exception as e:
             print(f"Error initializing vector store: {e}")
+
+    def _convert_match_to_text(self, match: pd.Series) -> str:
+
+        """Convert match data to searchable text"""
+        return f"""
+        Match between {match['team']} and {match['opponent']} on {match['date']}
+        Venue: {match['venue']}
+        Score: {match['team']} {match['gf']}-{match['ga']} {match['opponent']}
+        Team Performance:
+        - Shots: {match['sh']} (On Target: {match['sot']})
+        - Expected Goals: {match['xg']} vs {match['xga']}
+        Result: {match['result']}
+        """
