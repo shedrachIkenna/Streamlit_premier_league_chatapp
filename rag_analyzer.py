@@ -307,3 +307,19 @@ class PremierLeagueRAGAnalyzer:
             "response": llm_response,
             "relevant_matches": [match['text'] for match in relevant_matches]
         }
+
+    def _extract_teams_from_query(self, query: str) -> List[str]:
+        """Extract team names from query - this is a simple implementation"""
+        # In a real system, you'd want to use fuzzy matching and a proper team name database
+        teams = []
+        team_names = ["Arsenal", "Chelsea", "Liverpool", "Manchester City", 
+                     "Manchester United", "Tottenham", "Newcastle", "Brighton",
+                     "Aston Villa", "Wolves", "Crystal Palace", "Fulham",
+                     "Brentford", "Nottingham Forest", "Everton", "Bournemouth",
+                     "Luton", "Burnley", "Sheffield United"]
+        
+        for team in team_names:
+            if team.lower() in query:
+                teams.append(team)
+                
+        return teams
