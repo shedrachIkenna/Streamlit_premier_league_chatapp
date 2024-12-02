@@ -257,3 +257,53 @@ class PremierLeagueRAGAnalyzer:
         prediction['explanation'] = self._generate_llm_response(explanation_prompt)
         
         return prediction
+
+    def process_query(self, query: str) -> Dict:
+        """Process natural language queries about Premier League teams"""
+        query = query.lower()
+        
+        # Retrieve semantically relevant matches
+        relevant_matches = self._retrieve_relevant_matches(query)
+        
+        # Extract team names
+        teams = self._extract_teams_from_query(query)
+        
+        # Prepare additional context for LLM
+        context = "\n".join([match['text'] for match in relevant_matches])
+        
+        # Standard query processing
+        if "prediction" in query or "odds" in query or "chances" in query:
+            if len(teams) == 2:
+                return self.predict_match(teams[0], teams[1])
+            return {"error": "Please specify two teams for prediction"}
+            
+        if "form" in query or "performance" in query:
+            if len(teams) == 1:
+                return self.get_team_form(teams[0])
+            return {"error": "Please specify one team for form analysis"}
+            
+        if "head to head" in query or "versus" in query or "vs" in query:
+            if len(teams) == 2:
+                return self.get_head_to_head(teams[0], teams[1])
+            return {"error": "Please specify two teams for head-to-head comparison"}
+        
+        # Use LLM to generate a response for more complex queries
+        llm_prompt = f"""
+        You are a Premier League football analyst. 
+        Analyze the following query using the context of recent match data.
+
+        Query: {query}
+
+        Relevant Match Context:
+        {context}
+
+        Provide a detailed, insightful analysis based on the query and the match context.
+        """
+        
+        # Generate LLM response for complex queries
+        llm_response = self._generate_llm_response(llm_prompt)
+        
+        return {
+            "response": llm_response,
+            "relevant_matches": [match['text'] for match in relevant_matches]
+        }
