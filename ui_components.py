@@ -139,3 +139,51 @@ def display_team_form(analyzer):
             
             with col3:
                 st.metric("Expected Goals (Avg)", f"{team_form['xg_avg']:.2f}")
+
+def display_head_to_head(analyzer):
+    """Display head-to-head comparison"""
+    st.subheader("🤝 Head-to-Head Comparison")
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        team1 = st.selectbox("First Team", [
+            "Liverpool", "Manchester City", "Arsenal", "Chelsea", 
+            "Manchester United", "Tottenham"
+        ], index=0)
+    
+    with col2:
+        team2 = st.selectbox("Second Team", [
+            "Chelsea", "Manchester United", "Arsenal", "Liverpool", 
+            "Manchester City", "Tottenham"
+        ], index=1)
+    
+    if st.button("Compare Teams", key="h2h_btn"):
+        with st.spinner("Comparing team performances..."):
+            h2h_data = analyzer.get_head_to_head(team1, team2)
+            
+            # Wins Comparison
+            st.markdown("### 🏆 Head-to-Head Wins")
+            wins_data = {
+                'Outcome': [f'{team1} Wins', f'{team2} Wins', 'Draws'],
+                'Count': [
+                    h2h_data['summary'][f'{team1}_wins'], 
+                    h2h_data['summary'][f'{team2}_wins'], 
+                    h2h_data['summary']['draws']
+                ]
+            }
+            
+            fig = px.pie(
+                wins_data, 
+                values='Count', 
+                names='Outcome', 
+                title=f'Head-to-Head Matches: {team1} vs {team2}'
+            )
+            st.plotly_chart(fig)
+            
+            # Recent Matches
+            st.markdown("### 📅 Recent Matches")
+            for match in h2h_data['matches']:
+                st.markdown(
+                    f"**{match['date']}**: {match['home_team']} {match['score']} {match['away_team']}"
+                )
