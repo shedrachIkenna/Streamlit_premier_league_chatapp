@@ -189,3 +189,71 @@ class PremierLeagueRAGAnalyzer:
                 h2h_stats["summary"]["draws"] += 1
                 
         return h2h_stats
+
+    def predict_match(self, home_team: str, away_team: str) -> Dict:
+        """Predict match outcome based on recent form and historical data"""
+        # Get recent form for both teams
+        home_form = self.get_team_form(home_team, last_n_matches=10)
+        away_form = self.get_team_form(away_team, last_n_matches=10)
+        h2h = self.get_head_to_head(home_team, away_team, last_n_matches=5)
+
+        print(f"This is the home_form: {home_form}")
+        print(f"This is the away_team form: {away_form}")
+        
+        if "error" in home_form or "error" in away_form:
+            return {"error": "Insufficient data for prediction"}
+        
+        # Calculate basic probability based on recent form
+        home_xg_strength = home_form["xg_avg"]
+        home_xga_strength = home_form["xga_avg"]
+        away_xg_strength = away_form["xg_avg"]
+        away_xga_strength = away_form["xga_avg"]
+        
+        # Adjust for home advantage
+        home_advantage = 1.1  # 10% boost for home team
+        
+        # Calculate win probabilities
+        home_win_prob = (home_xg_strength * home_advantage / away_xga_strength) / 2
+        away_win_prob = (away_xg_strength / (home_xga_strength * home_advantage)) / 2
+        draw_prob = 1 - (home_win_prob + away_win_prob)
+        
+        # Normalize probabilities
+        total = home_win_prob + away_win_prob + draw_prob
+        home_win_prob /= total
+        away_win_prob /= total
+        draw_prob /= total
+        
+        prediction = {
+            "home_win_probability": round(home_win_prob * 100, 1),
+            "away_win_probability": round(away_win_prob * 100, 1),
+            "draw_probability": round(draw_prob * 100, 1),
+            "expected_goals": {
+                "home": round(home_xg_strength, 2),
+                "away": round(away_xg_strength, 2)
+            },
+            "recent_form": {
+                "home": home_form["recent_results"],
+                "away": away_form["recent_results"]
+            },
+            "head_to_head": h2h
+        }
+        
+        # Add natural language explanation using LLM
+        explanation_prompt = f"""
+        Provide a detailed betting analysis for the match between {home_team} and {away_team}.
+        
+        Match Prediction Details:
+        - {home_team} Win Probability: {prediction['home_win_probability']}%
+        - {away_team} Win Probability: {prediction['away_win_probability']}%
+        - Draw Probability: {prediction['draw_probability']}%
+        
+        {home_team} Recent Form: {prediction['recent_form']['home']}
+        {away_team} Recent Form: {prediction['recent_form']['away']}
+        
+        Provide insights into the match prediction, highlighting key factors
+        that influenced the probabilities and potential betting strategies.
+        """
+        
+        prediction['explanation'] = self._generate_llm_response(explanation_prompt)
+        
+        return prediction
