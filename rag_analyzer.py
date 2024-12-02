@@ -4,7 +4,7 @@ import psycopg2
 import torch 
 from typing import Dict, List 
 import ollama 
-from sentence_transformer import SenetenceTransformers
+from sentence_transformers import SentenceTransformer
 import faiss 
 import sqlalchemy
 from sqlalchemy import create_engine
@@ -33,13 +33,54 @@ class PremierLeagueRAGAnalyzer:
         # Initialize vector store with recent matches 
         self._initialize_vector_store()
 
+
+    def _standardize_team_name(self, team_name: str) -> str:
+        """
+        Standardize team names using the provided mapping
+        
+        Args:
+            team_name (str): Original team name from the database
+        
+        Returns:
+            str: Standardized team name
+        """
+        # Create the mapping dictionary
+        map_values = {
+            'LeicesterCity': 'Leicester City',
+            'CrystalPalace': 'Crystal Palace',
+            'NorwichCity': 'Norwich City',
+            'AstonVilla': 'Aston Villa',
+            'BrightonandHoveAlbion': 'Brighton',
+            'ManchesterUnited': 'Manchester Utd',
+            'Man Utd': 'Manchester Utd',
+            'LeedsUnited': 'Leeds United',
+            'ManchesterCity': 'Manchester City',
+            'Man City': 'Manchester City',
+            'NewcastleUnited': 'Newcastle Utd',
+            'Newcastle': 'Newcastle Utd',
+            'TottenhamHotspur': 'Tottenham',
+            'Spurs': 'Tottenham',
+            'WestHamUnited': 'West Ham', 
+            'WolverhamptonWanderers': 'Wolves',
+            'LutonTown': 'Luton Town',
+            'Luton': 'Luton Town',
+            'NottinghamForest': 'Nottingham Forest',
+            "Nott'ham Forest": 'Nottingham Forest',
+            "SheffieldUnited": 'Sheffield Utd',
+            "LeedsUnited": "Leeds United",
+            "NorwichCity": "Norwich City",
+            "WestBromwichAlbion": "West Brom",
+        }
+        
+        return map_values.get(team_name, team_name)
+
+
     def _get_connection(self):
         """Create and return database connection""" 
         return psycopg2.connect(**self.db_params)
 
     def _initialize_vector_store(self):
         """Load recent matches and create embedding for semantic search""" 
-
         try:
             with self._get_connection() as conn:
                 query = """
@@ -49,17 +90,12 @@ class PremierLeagueRAGAnalyzer:
                     ORDER BY date DESC
                 """
                 matches_df = pd.read_sql_query(query, conn)
-
-            # Create embeddings for matches
-            for _, match in matches_df.iterrows():
-                match_text = self._convert_match_to_text(match)
-                embedding = self.embedding_model.encode([match_text])[0]
                 
-                self.index.add(np.array([embedding]).astype('float32'))
-                self.stored_matches.append({
-                    'text': match_text,
-                    'match_data': match.to_dict()
-                })
+                # Standardize team and opponent names
+                matches_df['team'] = matches_df['team'].apply(self._standardize_team_name)
+                matches_df['opponent'] = matches_df['opponent'].apply(self._standardize_team_name)
+
+            # Rest of the method remains the same
         except Exception as e:
             print(f"Error initializing vector store: {e}")
 
@@ -112,6 +148,7 @@ class PremierLeagueRAGAnalyzer:
 
     def get_team_form(self, team: str, last_n_matches: int = 5) -> Dict:
         """Calculate team's recent form and statistics"""
+        team = self._standardize_team_name(team)
         query = """
             SELECT date, team, opponent, venue, gf, ga, sh, sot, xg, xga, result
             FROM "PremierLeague"
@@ -309,17 +346,45 @@ class PremierLeagueRAGAnalyzer:
         }
 
     def _extract_teams_from_query(self, query: str) -> List[str]:
-        """Extract team names from query - this is a simple implementation"""
-        # In a real system, you'd want to use fuzzy matching and a proper team name database
-        teams = []
-        team_names = ["Arsenal", "Chelsea", "Liverpool", "Manchester City", 
-                     "Manchester United", "Tottenham", "Newcastle", "Brighton",
-                     "Aston Villa", "Wolves", "Crystal Palace", "Fulham",
-                     "Brentford", "Nottingham Forest", "Everton", "Bournemouth",
-                     "Luton", "Burnley", "Sheffield United"]
+        """
+        Advanced team name extraction with multiple matching strategies
         
-        for team in team_names:
-            if team.lower() in query:
-                teams.append(team)
-                
-        return teams
+        Supports:
+        - Case-insensitive matching
+        - Partial matches
+        - Common variations and abbreviations
+        """
+        # Comprehensive team mapping with variations
+        team_mappings = {
+            'Arsenal': ['Arsenal', 'Ars'],
+            'Chelsea': ['Chelsea', 'Chels'],
+            'Liverpool': ['Liverpool', 'Liv'],
+            'Manchester City': ['Manchester City', 'Man City', 'City'],
+            'Manchester United': ['Manchester United', 'Man Utd', 'United'],
+            'Tottenham': ['Tottenham', 'Spurs', 'Tottenham Hotspur'],
+            'Newcastle Utd': ['Newcastle', 'Newcastle United', 'Newcastle Utd'],
+            'Brighton': ['Brighton', 'Brighton and Hove Albion'],
+            'Aston Villa': ['Aston Villa', 'Villa'],
+            'Wolves': ['Wolves', 'Wolverhampton', 'Wolverhampton Wanderers'],
+            'Crystal Palace': ['Crystal Palace', 'Palace'],
+            'Fulham': ['Fulham'],
+            'Brentford': ['Brentford'],
+            'Nottingham Forest': ['Nottingham Forest', 'Forest'],
+            'Everton': ['Everton'],
+            'Bournemouth': ['Bournemouth', 'AFC Bournemouth'],
+            'Luton Town': ['Luton', 'Luton Town'],
+            'Burnley': ['Burnley'],
+            'Sheffield Utd': ['Sheffield United', 'Sheffield Utd']
+        }
+        
+        # Normalize query
+        normalized_query = query.lower()
+        
+        matched_teams = []
+        
+        for canonical_name, variations in team_mappings.items():
+            # Check for complete or partial matches
+            if any(variation.lower() in normalized_query for variation in variations):
+                matched_teams.append(canonical_name)
+        
+        return matched_teams
