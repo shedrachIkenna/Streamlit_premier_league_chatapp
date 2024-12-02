@@ -109,3 +109,33 @@ class PremierLeagueRAGAnalyzer:
         except Exception as e:
             print(f"Error generating LLM response: {e}")
             return "Sorry, I couldn't generate a response at the moment."
+
+    def get_team_form(self, team: str, last_n_matches: int = 5) -> Dict:
+        """Calculate team's recent form and statistics"""
+        query = """
+            SELECT date, team, opponent, venue, gf, ga, sh, sot, xg, xga, result
+            FROM "PremierLeague"
+            WHERE team = %s
+            ORDER BY date DESC
+            LIMIT %s
+        """
+        
+        with self._get_connection() as conn:
+            df = pd.read_sql_query(query, conn, params=[team, last_n_matches])
+            
+        if df.empty:
+            return {"error": "No data found for this team"}
+            
+        # Calculate form metrics
+        form_metrics = {
+            "recent_results": df['result'].tolist(),
+            "goals_scored_avg": df['gf'].mean(),
+            "goals_conceded_avg": df['ga'].mean(),
+            "shots_avg": df['sh'].mean(),
+            "shots_on_target_avg": df['sot'].mean(),
+            "xg_avg": df['xg'].mean(),
+            "xga_avg": df['xga'].mean(),
+            "last_matches": df[['date', 'opponent', 'result', 'gf', 'ga']].to_dict('records')
+        }
+        
+        return form_metrics
