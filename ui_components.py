@@ -96,3 +96,46 @@ def display_match_prediction(analyzer):
             # AI Match Analysis
             st.markdown("### 🤖 AI Match Analysis")
             st.write(prediction['explanation'])
+
+def display_team_form(analyzer):
+    """Display team form analysis"""
+    st.subheader("📈 Team Performance Analysis")
+    
+    team = st.selectbox("Select Team", [
+        "Liverpool", "Manchester City", "Arsenal", "Chelsea", 
+        "Manchester United", "Tottenham"
+    ])
+    
+    if st.button("Analyze Team", key="team_form_btn"):
+        with st.spinner("Analyzing team performance..."):
+            team_form = analyzer.get_team_form(team)
+            
+            # Recent Results Visualization
+            st.markdown(f"### 🏅 {team} Recent Form")
+            results_map = {'W': 'green', 'D': 'gray', 'L': 'red'}
+            result_colors = [results_map.get(r, 'gray') for r in team_form['recent_results']]
+            
+            fig = go.Figure(data=[go.Bar(
+                x=[f'Match {i+1}' for i in range(len(team_form['recent_results']))],
+                y=[1]*len(team_form['recent_results']),
+                marker_color=result_colors
+            )])
+            fig.update_layout(
+                title='Recent Match Results (Green: Win, Gray: Draw, Red: Loss)',
+                xaxis_title='Matches',
+                yaxis_title='Result'
+            )
+            st.plotly_chart(fig)
+            
+            # Performance Metrics
+            st.markdown("### 📊 Performance Metrics")
+            col1, col2, col3 = st.columns(3)
+            
+            with col1:
+                st.metric("Goals Scored (Avg)", f"{team_form['goals_scored_avg']:.2f}")
+            
+            with col2:
+                st.metric("Goals Conceded (Avg)", f"{team_form['goals_conceded_avg']:.2f}")
+            
+            with col3:
+                st.metric("Expected Goals (Avg)", f"{team_form['xg_avg']:.2f}")
