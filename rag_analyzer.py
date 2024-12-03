@@ -46,30 +46,25 @@ class PremierLeagueRAGAnalyzer:
         """
         # Create the mapping dictionary
         map_values = {
-            'LeicesterCity': 'Leicester City',
-            'CrystalPalace': 'Crystal Palace',
-            'NorwichCity': 'Norwich City',
-            'AstonVilla': 'Aston Villa',
-            'BrightonandHoveAlbion': 'Brighton',
-            'ManchesterUnited': 'Manchester Utd',
-            'Man Utd': 'Manchester Utd',
-            'LeedsUnited': 'Leeds United',
-            'ManchesterCity': 'Manchester City',
-            'Man City': 'Manchester City',
-            'NewcastleUnited': 'Newcastle Utd',
-            'Newcastle': 'Newcastle Utd',
-            'TottenhamHotspur': 'Tottenham',
-            'Spurs': 'Tottenham',
-            'WestHamUnited': 'West Ham', 
-            'WolverhamptonWanderers': 'Wolves',
-            'LutonTown': 'Luton Town',
-            'Luton': 'Luton Town',
-            'NottinghamForest': 'Nottingham Forest',
-            "Nott'ham Forest": 'Nottingham Forest',
-            "SheffieldUnited": 'Sheffield Utd',
-            "LeedsUnited": "Leeds United",
-            "NorwichCity": "Norwich City",
-            "WestBromwichAlbion": "West Brom",
+            'Leicester City': 'LeicesterCity',
+            'Crystal Palace': 'CrystalPalace',
+            'Norwich City': 'NorwichCity',
+            'Aston Villa': 'AstonVilla',
+            'Brighton': 'BrightonandHoveAlbion',
+            'Manchester United': 'ManchesterUnited',
+            'Leeds United': 'LeedsUnited',
+            'Manchester City': 'ManchesterCity',
+            'Newcastle': 'NewcastleUnited',
+            'Tottenham': 'TottenhamHotspur',
+            'Westham': 'WestHamUnited', 
+            'Wolves': 'WolverhamptonWanderers',
+            'Luton Town': 'LutonTown',
+            'Nottingham Forest': 'NottinghamForest',
+            "Sheffield United": 'SheffieldUnited',
+            "Leeds United": "LeedsUnited",
+            "Norwich City": "NorwichCity",
+            "West Brom": "WestBromwichAlbion",
+            "Ipswich": "IpswichTown",
         }
         
         return map_values.get(team_name, team_name)
@@ -159,6 +154,10 @@ class PremierLeagueRAGAnalyzer:
         
         with self._get_connection() as conn:
             df = pd.read_sql_query(query, conn, params=[team, last_n_matches])
+
+            # Standardize team and opponent names
+            df['team'] = df['team'].apply(self._standardize_team_name)
+            df['opponent'] = df['opponent'].apply(self._standardize_team_name)
             
         if df.empty:
             return {"error": "No data found for this team"}
@@ -189,6 +188,8 @@ class PremierLeagueRAGAnalyzer:
         
         with self._get_connection() as conn:
             df = pd.read_sql_query(query, conn, params=[team1, team2, team2, team1, last_n_matches])
+            df['team'] = df['team'].apply(self._standardize_team_name)
+            df['opponent'] = df['opponent'].apply(self._standardize_team_name)
             
         if df.empty:
             return {"error": "No head-to-head data found"}
@@ -361,7 +362,7 @@ class PremierLeagueRAGAnalyzer:
             'Liverpool': ['Liverpool', 'Liv'],
             'Manchester City': ['Manchester City', 'Man City', 'City'],
             'Manchester United': ['Manchester United', 'Man Utd', 'United'],
-            'Tottenham': ['Tottenham', 'Spurs', 'Tottenham Hotspur'],
+            'Tottenham': ['Tottenham', 'Spurs', 'Tottenham Hotspur', 'TottenhamHotspur'],
             'Newcastle Utd': ['Newcastle', 'Newcastle United', 'Newcastle Utd'],
             'Brighton': ['Brighton', 'Brighton and Hove Albion'],
             'Aston Villa': ['Aston Villa', 'Villa'],
