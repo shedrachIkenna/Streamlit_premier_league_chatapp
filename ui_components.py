@@ -41,16 +41,22 @@ def display_match_prediction(analyzer):
     col1, col2 = st.columns(2)
     
     with col1:
-        home_team = st.selectbox("Home Team", [
-            "Liverpool", "Manchester City", "Arsenal", "Chelsea", 
-            "Manchester United", "Tottenham"
-        ], index=0)
+        home_team = st.selectbox("Home Team", ['Liverpool', 'Everton', 'WestHamUnited',
+       'CrystalPalace', 'BrightonandHoveAlbion', 'ManchesterCity',
+       'Bournemouth', 'Southampton', 'TottenhamHotspur',
+       'AstonVilla', 'Arsenal', 'NewcastleUnited',
+       'LeicesterCity', 'Chelsea', 'WolverhamptonWanderers',
+       'ManchesterUnited', 'Fulham',
+       'Brentford', 'NottinghamForest', 'IpswichTown'], index=0)
     
     with col2:
-        away_team = st.selectbox("Away Team", [
-            "Chelsea", "Manchester United", "Arsenal", "Liverpool", 
-            "Manchester City", "Tottenham"
-        ], index=0)
+        away_team = st.selectbox("Away Team", ['Liverpool', 'Everton', 'WestHamUnited',
+       'CrystalPalace', 'BrightonandHoveAlbion', 'ManchesterCity',
+       'Bournemouth', 'Southampton', 'TottenhamHotspur',
+       'AstonVilla', 'Arsenal', 'NewcastleUnited',
+       'LeicesterCity', 'Chelsea', 'WolverhamptonWanderers',
+       'ManchesterUnited', 'Fulham',
+       'Brentford', 'NottinghamForest', 'IpswichTown'], index=0)
     
     if st.button("Predict Match", key="predict_btn"):
         with st.spinner("Generating match prediction..."):
