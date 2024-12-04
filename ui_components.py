@@ -107,10 +107,13 @@ def display_team_form(analyzer):
     """Display team form analysis"""
     st.subheader("📈 Team Performance Analysis")
     
-    team = st.selectbox("Select Team", [
-        "Liverpool", "Manchester City", "Arsenal", "Chelsea", 
-        "Manchester United", "Tottenham"
-    ])
+    team = st.selectbox("Select Team", ['Liverpool', 'Everton', 'WestHamUnited',
+       'CrystalPalace', 'BrightonandHoveAlbion', 'ManchesterCity',
+       'Bournemouth', 'Southampton', 'TottenhamHotspur',
+       'AstonVilla', 'Arsenal', 'NewcastleUnited',
+       'LeicesterCity', 'Chelsea', 'WolverhamptonWanderers',
+       'ManchesterUnited', 'Fulham',
+       'Brentford', 'NottinghamForest', 'IpswichTown'])
     
     if st.button("Analyze Team", key="team_form_btn"):
         with st.spinner("Analyzing team performance..."):
