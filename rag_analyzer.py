@@ -90,7 +90,7 @@ class PremierLeagueRAGAnalyzer:
                 matches_df['team'] = matches_df['team'].apply(self._standardize_team_name)
                 matches_df['opponent'] = matches_df['opponent'].apply(self._standardize_team_name)
 
-            # Rest of the method remains the same
+            
         except Exception as e:
             print(f"Error initializing vector store: {e}")
 
@@ -276,7 +276,7 @@ class PremierLeagueRAGAnalyzer:
             "head_to_head": h2h
         }
         
-        # Add natural language explanation using LLM
+        # Natural language explanation using LLM
         explanation_prompt = f"""
         Provide a detailed betting analysis for the match between {home_team} and {away_team}.
         
@@ -306,7 +306,7 @@ class PremierLeagueRAGAnalyzer:
         # Extract team names
         teams = self._extract_teams_from_query(query)
         
-        # Prepare additional context for LLM
+        # Additional context for LLM
         context = "\n".join([match['text'] for match in relevant_matches])
         
         # Standard query processing
